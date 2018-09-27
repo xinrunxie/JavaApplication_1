@@ -1,0 +1,725 @@
+package tools;
+
+import java.awt.*;
+
+import java.awt.event.ActionEvent;
+
+import java.awt.event.ActionListener;
+
+import java.io.*;
+
+import java.net.InterfaceAddress;
+
+import java.nio.file.Path;
+
+import java.util.ArrayList;
+
+import java.util.Enumeration;
+
+import java.util.Scanner;
+
+import java.util.regex.Matcher;
+
+import java.util.regex.Pattern;
+
+ 
+
+import javax.jws.soap.SOAPBinding.Style;
+
+import javax.sql.StatementEventListener;
+
+import javax.swing.*;
+
+import javax.swing.filechooser.FileFilter;
+
+import javax.swing.text.AttributeSet;
+
+import javax.swing.text.BadLocationException;
+
+import javax.swing.text.Document;
+
+import javax.swing.text.MutableAttributeSet;
+
+import javax.swing.text.SimpleAttributeSet;
+
+import javax.swing.text.StyleConstants;
+
+ 
+
+import org.omg.CosNaming.NamingContextExtPackage.StringNameHelper;
+
+ 
+
+public class GUI extends JFrame {
+
+ 
+
+                JButton Open = new JButton("打开");
+
+                JButton Save = new JButton("保存");
+
+                JButton Deal = new JButton("处理");
+
+                JButton Submit = new JButton("提交");
+
+                JTextPane face = new JTextPane();
+
+                JTextField text1 = new JTextField(); //路径输入框
+
+                JTextField text2 = new JTextField(); //关键字输入框
+
+               
+
+                String keyword;
+
+                String path; //源路径
+
+                boolean flag = false; //路径输入标示
+
+                Document doc = face.getDocument();
+
+ 
+
+               
+
+                BufferedReader fin;
+
+                PrintWriter fout;
+
+               
+
+               
+
+                ArrayList<String> data = new ArrayList<String>();
+
+               
+
+                GUI() {
+
+                                this.setTitle("小工具@xinrun");
+
+                                this.setLayout(new FlowLayout());
+
+                                Open.addActionListener(new OpenEvent());
+
+                                Save.addActionListener(new SaveEvent());
+
+                                Submit.addActionListener(new SubmitEvent());
+
+                                Deal.addActionListener(new MainProcess());
+
+                                Container content = this.getContentPane();
+
+                                this.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
+
+                                JPanel layout_b = new JPanel();
+
+                                layout_b.setLayout(new BoxLayout(layout_b, BoxLayout.LINE_AXIS));
+
+                                layout_b.add(Open);
+
+                                layout_b.add(Save);
+
+                                layout_b.add(Deal);
+
+                                JPanel layout_input = new JPanel();
+
+                                // layout_input.setPreferredSize(new Dimension(0,50));
+
+                                layout_input.setLayout(new BoxLayout(layout_input, BoxLayout.LINE_AXIS));
+
+                                layout_input.add(new JLabel("文件路径"));
+
+                                layout_input.add(text1);
+
+                                layout_input.add(new JLabel("关键字"));
+
+                                layout_input.add(text2);
+
+                                layout_input.add(Submit);
+
+                                text1.setEditable(false);
+
+                                text2.setEditable(false);
+
+                                Submit.setEnabled(false);
+
+                                face.setEditable(false);
+
+                                JScrollPane show = new JScrollPane(face);
+
+                                show.setPreferredSize(new Dimension(0, 500));
+
+                                // show.setEditable(false);
+
+                                content.add(show);
+
+                                content.add(layout_input);
+
+                                content.add(layout_b);
+
+                                this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+
+                                this.setSize(800, 600);
+
+                                this.setVisible(true);
+
+                               
+
+                                try {
+
+                                                doc.insertString(0, "欢迎使用该小工具，请点击打开按钮选择你所需要的文件\n",new SimpleAttributeSet());
+
+                                } catch (BadLocationException e) {
+
+                                                // TODO Auto-generated catch block
+
+                                                e.printStackTrace();
+
+                                }
+
+                }
+
+ 
+
+                public static void main(String[] args) {
+
+                                new GUI();
+
+                               
+
+                               
+
+                }
+
+ 
+
+                class OpenEvent implements ActionListener {
+
+                                /*读取文件*/
+
+                                @Override
+
+                                public void actionPerformed(ActionEvent e) {
+
+                                                // TODO Auto-generated method stub
+
+                                                /*清空屏幕内容*/
+
+                                                face.setText("");
+
+                                                /*清空内容栈*/
+
+                                                data.clear();
+
+                                               
+
+                                                JFileChooser chooser = new JFileChooser();
+
+                                                chooser.addChoosableFileFilter(new ClasspathFilter());
+
+                                                if (chooser.showOpenDialog(GUI.this) == JFileChooser.APPROVE_OPTION) {
+
+ 
+
+                                                                File f = chooser.getSelectedFile();
+
+                                                               
+
+                                                                try {
+
+                                                                                doc.insertString(doc.getLength(), "成功读取文件：" + f.getPath(),new SimpleAttributeSet());
+
+                                                                                fin = new BufferedReader(new FileReader(f));
+
+                                                                                Submit.setEnabled(true);
+
+                                                                                text1.setEditable(true);
+
+                                                                                text2.setEditable(true);
+
+                                                                                flag = true;
+
+                                                                                doc.insertString(doc.getLength(), "\n请输入jar库绝对路径与替换关键字，并点击提交按钮",new SimpleAttributeSet());
+
+                                                                } catch (BadLocationException | FileNotFoundException e2) {
+
+                                                                                // TODO Auto-generated catch block
+
+                                                                                e2.printStackTrace();
+
+                                                                }
+
+                                                               
+
+                                                                /*
+
+                                                                * 进入用户输入路径事件
+
+                                                                * SubmintEvent
+
+                                                                * */
+
+                                                               
+
+                                                } // if
+
+                                }//
+
+ 
+
+                }
+
+ 
+
+                /*文件筛选*/
+
+                class ClasspathFilter extends FileFilter {
+
+ 
+
+                                @Override
+
+                                public boolean accept(File f) {
+
+                                                // TODO Auto-generated method stub
+
+                                                String name = f.getName();
+
+                                                if (name.endsWith(".classpath")) {
+
+                                                                return true;
+
+                                                }
+
+                                                return false;
+
+                                }
+
+ 
+
+                                @Override
+
+                                public String getDescription() {
+
+                                                // TODO Auto-generated method stub
+
+                                                return ".classpath";
+
+                                }
+
+ 
+
+                }
+
+ 
+
+               
+
+                class SubmitEvent implements ActionListener {
+
+                                @Override
+
+                                public void actionPerformed(ActionEvent e) {
+
+                                                // TODO Auto-generated method stub
+
+                                                // if(flag){
+
+                                                /*获取文件路径*/
+
+                                                String usr = text1.getText();
+
+                                                /*获取替代关键字*/
+
+                                                keyword = text2.getText();
+
+                                                try {
+
+                                                                path = usr;
+
+                                                                doc.insertString(doc.getLength(), "\njar包路径："+usr+"\n替换关键字："+keyword, new SimpleAttributeSet());
+
+                                                                Submit.setEnabled(false);
+
+                                                                text1.setEditable(false);
+
+                                                                text2.setEditable(false);
+
+                                                                doc.insertString(doc.getLength(), "\n成功提交，请点击处理按钮\n", new SimpleAttributeSet());
+
+//                                                            flag = false;
+
+                                                } catch (BadLocationException e1) {
+
+                                                                // TODO Auto-generated catch block
+
+                                                                e1.printStackTrace();
+
+                                                } // catch
+
+                                               
+
+                                                /*
+
+                                                * 进入事件处理的主过程
+
+                                                *
+
+                                                 * MainProcess
+
+                                                *
+
+                                                 * */
+
+                                               
+
+                                }// actionPerformed
+
+                }//class
+
+               
+
+                class MainProcess implements ActionListener{
+
+ 
+
+                                @Override
+
+                                public void actionPerformed(ActionEvent e) {
+
+                                                // TODO Auto-generated method stub
+
+                                                try {
+
+                                                                doc.insertString(doc.getLength(), "\n开始处理\n*********************",new SimpleAttributeSet());
+
+                                                } catch (BadLocationException e2) {
+
+                                                                // TODO Auto-generated catch block
+
+                                                                e2.printStackTrace();
+
+                                                }
+
+                                               
+
+                                               
+
+                                                try {
+
+                                                                String input;
+
+                                                                while ((input = fin.readLine()) != null) {
+
+                                                                                String out = "";
+
+                                                                                if (input.contains("kind=\"lib\"")) {
+
+                                                                                                /* 替换为windows文件符号 */
+
+                                                                                                input = input.replace("/", "\\");
+
+                                                                                                /* 判断是否有Jar包 */
+
+                                                                                                while (input.contains("jar")) {
+
+                                                                                                                /* 获取jar包绝对路径 */
+
+                                                                                                                // String jar_path = path +
+
+                                                                                                                // input.substring(input.indexOf("\\"),
+
+                                                                                                                // input.indexOf("jar") + 3);
+
+                                                                                                                String jar_path = input.substring(input.indexOf("path=") + 6, input.indexOf("jar") + 3);
+
+                                                                                                                /* 打印到应用界面 */
+
+                                                                                                                doc.insertString(doc.getLength(), "\n原始路径: " + jar_path, new SimpleAttributeSet());
+
+                                                               
+
+                                                                                                                jar_path = jar_path.replace(keyword,path);
+
+ 
+
+                                                                                                                jar_path = dealjar(jar_path);
+
+                                                                                                                if (jar_path.equals("Error")) {
+
+                                                                                                                                out = input;
+
+                                                                                                                                break;
+
+                                                                                                                }
+
+                                                                                                                String str = input.substring(input.indexOf("jar") + 3);
+
+                                                                                                                /* 判断句子中是否含有多个jar包 */
+
+                                                                                                                if (!str.contains("jar")) {
+
+                                                                                                                                out = out + input.substring(0, input.indexOf("path=") + 6) + jar_path + str;
+
+                                                                                                                                break;
+
+                                                                                                                }
+
+                                                                                                                /* 构建输出out */
+
+                                                                                                                out = out + input.substring(0, input.indexOf("path=") + 6) + jar_path;
+
+                                                                                                                /*
+
+                                                                                                                * 获取下一个jar关键字 input为当前“jar”后面的字符串
+
+                                                                                                                */
+
+                                                                                                                input = str;
+
+                                                                                                }
+
+                                                                                               
+
+                                                                                               
+
+                                                                                               
+
+                                                                                                /* 打印替换语句 */
+
+                                                                                                if (!out.isEmpty()) {
+
+                                                                                                                SimpleAttributeSet Success = new SimpleAttributeSet();
+
+                                                                                                                StyleConstants.setForeground(Success, Color.blue);
+
+                                                                                                                doc.insertString(doc.getLength(), "\n替换语句:" + out, Success);
+
+                                                                                                } // if
+
+                                                                                                /* 替换回绝对路径 */
+
+//                                                                                            System.out.println(out);
+
+                                                                                                out = out.replace(path, keyword);
+
+//                                                                                            System.out.println(out);
+
+                                                                                                /* 替换回来Linux路径 */
+
+                                                                                                out = out.replace("\\", "/");
+
+                                                                                                /*
+
+                                                                                                 * 写入内存中待写入文件
+
+                                                                                                * 执行writeEvent
+
+                                                                                                * 
+
+                                                                                                 * */
+
+                                                                                                data.add(out);
+
+                                                                                } // if
+
+                                                                                else {
+
+                                                                                                data.add(input);
+
+                                                                                }
+
+                                                                } // while
+
+                                                               
+
+                                                               
+
+                                                                try {
+
+                                                                                doc.insertString(doc.getLength(), "\n********************************\n处理完成请点击保存输出文件",new SimpleAttributeSet());
+
+                                                                } catch (BadLocationException e2) {
+
+                                                                                // TODO Auto-generated catch block
+
+                                                                                e2.printStackTrace();
+
+                                                                }
+
+                                                               
+
+                                                } catch (IOException | BadLocationException e1) {
+
+                                                                // TODO Auto-generated catch block
+
+                                                                e1.printStackTrace();
+
+                                                }
+
+                                }
+
+                               
+
+                }
+
+ 
+
+                public String dealjar(String p) throws BadLocationException {
+
+                                File file = new File(p);
+
+                                if (!file.exists()) {
+
+                                                /* 获取文件目录 */
+
+                                                try {
+
+                                                                /*获取目录*/
+
+                                                                File fpath = new File(p.substring(0, p.lastIndexOf("\\")));
+
+//                                                            System.out.println(fpath);
+
+                                                                /* 获取文件名 */
+
+                                                                String f_name = p.substring(p.lastIndexOf("\\") + 1, p.indexOf("jar") + 3);
+
+//                                                            System.out.println(f_name);
+
+                                                                /* 获取文件列表 */
+
+                                                                String list[] = fpath.list();
+
+                                                                int sub = Integer.MAX_VALUE;
+
+                                                                /*
+
+                                                                 * 模糊jar包匹配 ——调用getfile,返回新的jar包名
+
+                                                                *  */
+
+                                                                f_name = getfile(f_name, list);
+
+                                                                /*构造jar包*/
+
+                                                                p = p.substring(0,p.lastIndexOf("\\")) + "\\" + f_name;
+
+                                                                return p;
+
+                                                } catch (NullPointerException e) {
+
+                                                                /*错误样式*/
+
+                                                                SimpleAttributeSet Error = new SimpleAttributeSet();
+
+                                                                StyleConstants.setForeground(Error, Color.red);
+
+                                                                doc.insertString(doc.getLength(), "\n路径错误",Error);
+
+                                                                return p;
+
+                                                }
+
+                                } // if
+
+                                else {
+
+                                                return p;
+
+                                }
+
+                }// dealjar
+
+               
+
+                public String getfile(String s, String list[]) {
+
+                                /*正则表达式获取jar包名，过滤版本号*/
+
+                                /*过滤目标文件*/
+
+                                Pattern p = Pattern.compile("[-_](\\d+.*)*jar");
+
+                                Matcher m = p.matcher(s);
+
+                                s = m.replaceAll("");
+
+                                /*过滤目录文件*/
+
+                                for(String e:list){
+
+                                                m = p.matcher(e);
+
+                                                String e1 = m.replaceAll("");
+
+                                                if(e1.equals(s)){
+
+                                                                return e;
+
+                                                }
+
+                                }
+
+                                return s;
+
+                }
+
+               
+
+ 
+
+                class SaveEvent implements ActionListener {
+
+ 
+
+                                @Override
+
+                                public void actionPerformed(ActionEvent e) {
+
+                                                // TODO Auto-generated method stub
+
+                                                JFileChooser f = new JFileChooser();
+
+                                                int rVal = f.showSaveDialog(GUI.this);
+
+                                                if (rVal == JFileChooser.APPROVE_OPTION) {
+
+                                                                String path = f.getSelectedFile().getPath();
+
+                                                                try {
+
+                                                                                fout = new PrintWriter(new FileWriter(new File(path),true));
+
+                                                                                for(String s : data){
+
+                                                                                                fout.println(s);
+
+                                                                                }
+
+                                                                } catch (IOException e1) {
+
+                                                                                // TODO Auto-generated catch block
+
+                                                                                e1.printStackTrace();
+
+                                                                }
+
+                                                } else if (rVal == JFileChooser.CANCEL_OPTION) {
+
+                                                                System.out.println("cancel");
+
+                                                }
+
+                                                fout.flush();
+
+                                                fout.close();
+
+                                }
+
+                }// class
+
+               
+
+}
